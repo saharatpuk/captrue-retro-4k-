@@ -85,17 +85,26 @@ async function startRecording(config) {
   // 2. Get Mic Stream if enabled
   if (recordMic) {
     try {
-      micStream = await navigator.mediaDevices.getUserMedia({
+      const micConstraints = {
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true
         }
-      });
+      };
+      if (recordingConfig.micDeviceId) {
+        micConstraints.audio.deviceId = { exact: recordingConfig.micDeviceId };
+      }
+      micStream = await navigator.mediaDevices.getUserMedia(micConstraints);
       console.log('Microphone stream successfully acquired:', micStream.getAudioTracks().length);
     } catch (err) {
-      console.warn('Microphone permission denied or failed in offscreen:', err);
-      // Proceed without mic if failed
+      console.warn('Microphone permission or deviceId acquisition failed, trying generic mic:', err);
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (fallbackErr) {
+        console.warn('Generic mic access also failed:', fallbackErr);
+        micStream = null;
+      }
     }
   }
 

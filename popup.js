@@ -8,6 +8,8 @@ const timerText = document.getElementById('timerText');
 const controlsArea = document.getElementById('controlsArea');
 const resolutionSelect = document.getElementById('resolutionSelect');
 const micToggle = document.getElementById('micToggle');
+const micDeviceRow = document.getElementById('micDeviceRow');
+const micDeviceSelect = document.getElementById('micDeviceSelect');
 const camToggle = document.getElementById('camToggle');
 const camDeviceRow = document.getElementById('camDeviceRow');
 const camDeviceSelect = document.getElementById('camDeviceSelect');
@@ -17,9 +19,15 @@ const systemAudioToggle = document.getElementById('systemAudioToggle');
 const btnOpenItems = document.getElementById('btnOpenItems');
 
 // Load stored preferences
-chrome.storage.local.get(['pref_res', 'pref_mic', 'pref_cam', 'pref_cam_device', 'pref_cam_pos', 'pref_sys'], (res) => {
+chrome.storage.local.get(['pref_res', 'pref_mic', 'pref_mic_device', 'pref_cam', 'pref_cam_device', 'pref_cam_pos', 'pref_sys'], (res) => {
   if (res.pref_res) resolutionSelect.value = res.pref_res;
-  if (res.pref_mic !== undefined) micToggle.checked = res.pref_mic;
+  if (res.pref_mic !== undefined) {
+    micToggle.checked = res.pref_mic;
+    micDeviceRow.style.display = res.pref_mic ? 'flex' : 'none';
+    if (res.pref_mic) {
+      populateMicrophoneDevices(res.pref_mic_device);
+    }
+  }
   if (res.pref_cam !== undefined) {
     camToggle.checked = res.pref_cam;
     camDeviceRow.style.display = res.pref_cam ? 'flex' : 'none';
@@ -37,10 +45,18 @@ resolutionSelect.addEventListener('change', () => {
   chrome.storage.local.set({ pref_res: resolutionSelect.value });
 });
 micToggle.addEventListener('change', async () => {
-  chrome.storage.local.set({ pref_mic: micToggle.checked });
-  if (micToggle.checked) {
-    await requestMediaPermission({ audio: true });
+  const isEnabled = micToggle.checked;
+  micDeviceRow.style.display = isEnabled ? 'flex' : 'none';
+  chrome.storage.local.set({ pref_mic: isEnabled });
+  if (isEnabled) {
+    const granted = await requestMediaPermission({ audio: true });
+    if (granted) {
+      await populateMicrophoneDevices();
+    }
   }
+});
+micDeviceSelect.addEventListener('change', () => {
+  chrome.storage.local.set({ pref_mic_device: micDeviceSelect.value });
 });
 camToggle.addEventListener('change', async () => {
   const isEnabled = camToggle.checked;
@@ -63,6 +79,37 @@ camPositionSelect.addEventListener('change', () => {
 systemAudioToggle.addEventListener('change', () => {
   chrome.storage.local.set({ pref_sys: systemAudioToggle.checked });
 });
+
+async function populateMicrophoneDevices(preferredDeviceId = null) {
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const audioDevices = devices.filter(d => d.kind === 'audioinput');
+    
+    micDeviceSelect.innerHTML = '';
+    if (audioDevices.length === 0) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = 'ไม่พบไมโครโฟนในระบบ';
+      micDeviceSelect.appendChild(opt);
+      return;
+    }
+
+    audioDevices.forEach((device, idx) => {
+      const opt = document.createElement('option');
+      opt.value = device.deviceId;
+      opt.textContent = device.label || `ไมโครโฟนตัวที่ ${idx + 1}`;
+      if (preferredDeviceId && device.deviceId === preferredDeviceId) {
+        opt.selected = true;
+      }
+      micDeviceSelect.appendChild(opt);
+    });
+
+    // Save current selected device
+    chrome.storage.local.set({ pref_mic_device: micDeviceSelect.value });
+  } catch (err) {
+    console.error('enumerateDevices (mic) error:', err);
+  }
+}
 
 async function populateCameraDevices(preferredDeviceId = null) {
   try {
@@ -181,6 +228,7 @@ btnToggleRecord.addEventListener('click', async () => {
     const options = {
       resolution: resolutionSelect.value,
       mic: micToggle.checked,
+      micDeviceId: micDeviceSelect.value || null,
       cam: camToggle.checked,
       camDeviceId: camDeviceSelect.value || null,
       camPosition: camPositionSelect.value || 'bottom-right',
