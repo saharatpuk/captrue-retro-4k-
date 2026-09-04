@@ -88,8 +88,9 @@ async function startRecording(config) {
           autoGainControl: true
         }
       });
+      console.log('Microphone stream successfully acquired:', micStream.getAudioTracks().length);
     } catch (err) {
-      console.warn('Microphone permission denied or failed:', err);
+      console.warn('Microphone permission denied or failed in offscreen:', err);
       // Proceed without mic if failed
     }
   }
@@ -102,8 +103,13 @@ async function startRecording(config) {
   const hasSystemAudio = screenStream.getAudioTracks().length > 0;
   const hasMicAudio = micStream && micStream.getAudioTracks().length > 0;
 
+  console.log(`Audio tracks status: System Audio = ${hasSystemAudio}, Mic Audio = ${hasMicAudio}`);
+
   if (hasSystemAudio || hasMicAudio) {
     audioContext = new AudioContext();
+    if (audioContext.state === 'suspended') {
+      await audioContext.resume();
+    }
     const dest = audioContext.createMediaStreamDestination();
 
     if (hasSystemAudio) {

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>ตั้งค่าสิทธิ์ไมโครโฟน | Captrue Retro 4K</title>
+  <style>
+    body {
+      background-color: #0b0d13;
+      color: #00ffcc;
+      font-family: 'Consolas', 'Courier New', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .card {
+      background: #11141e;
+      border: 1px solid #00ffcc;
+      box-shadow: 0 0 20px rgba(0, 255, 204, 0.2);
+      border-radius: 8px;
+      padding: 30px;
+      max-width: 500px;
+      width: 100%;
+      text-align: center;
+    }
+    h1 {
+      font-size: 20px;
+      margin-bottom: 15px;
+      color: #00ffcc;
+    }
+    p {
+      font-size: 14px;
+      color: #94a3b8;
+      line-height: 1.6;
+      margin-bottom: 25px;
+    }
+    .btn-allow {
+      background: #00ffcc;
+      color: #0b0d13;
+      border: none;
+      padding: 12px 24px;
+      font-weight: bold;
+      font-size: 14px;
+      font-family: inherit;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-allow:hover {
+      background: #00cca3;
+      box-shadow: 0 0 15px rgba(0, 255, 204, 0.4);
+    }
+    .status {
+      margin-top: 20px;
+      font-size: 13px;
+    }
+    .success {
+      color: #10b981;
+    }
+    .error {
+      color: #ef4444;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>&gt; MICROPHONE ACCESS</h1>
+    <p>
+      ระบบต้องการขอสิทธิ์การเข้าถึงไมโครโฟนเพื่อบันทึกเสียงร่วมกับเสียงระบบ<br>
+      กรุณากดปุ่ม <b>"อนุญาตไมโครโฟน (Allow Mic)"</b> ด้านล่าง และกดยินยอมบนหน้าต่างเบราว์เซอร์
+    </p>
+    <button class="btn-allow" id="btnGrant">&gt; อนุญาตไมโครโฟน (ALLOW MIC)</button>
+    <div class="status" id="statusText"></div>
+  </div>
+
+  <script src="request-mic.js"></script>
+</body>
+</html>

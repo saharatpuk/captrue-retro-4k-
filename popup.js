@@ -22,12 +22,43 @@ chrome.storage.local.get(['pref_res', 'pref_mic', 'pref_sys'], (res) => {
 resolutionSelect.addEventListener('change', () => {
   chrome.storage.local.set({ pref_res: resolutionSelect.value });
 });
-micToggle.addEventListener('change', () => {
+micToggle.addEventListener('change', async () => {
   chrome.storage.local.set({ pref_mic: micToggle.checked });
+  if (micToggle.checked) {
+    await requestMicPermission();
+  }
 });
 systemAudioToggle.addEventListener('change', () => {
   chrome.storage.local.set({ pref_sys: systemAudioToggle.checked });
 });
+
+async function requestMicPermission() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    // Stop immediately once permission is acquired
+    stream.getTracks().forEach(t => t.stop());
+    return true;
+  } catch (err) {
+    console.warn('Microphone permission request failed/dismissed in popup:', err);
+    // If permission prompt fails in popup, open request-mic tab
+    chrome.tabs.create({ url: 'request-mic.html' });
+    return false;
+  }
+}
+
+async function checkOrRequestMicPermission() {
+  if (navigator.permissions && navigator.permissions.query) {
+    try {
+      const status = await navigator.permissions.query({ name: 'microphone' });
+      if (status.state === 'granted') {
+        return true;
+      }
+    } catch (e) {
+      // Ignore and fallback to getUserMedia
+    }
+  }
+  return await requestMicPermission();
+}
 
 // Check current recording state on popup open
 checkRecordingState();
@@ -56,6 +87,15 @@ btnToggleRecord.addEventListener('click', async () => {
   const isCurrentlyRecording = response && response.isRecording;
 
   if (!isCurrentlyRecording) {
+    // Check microphone permission first if enabled
+    if (micToggle.checked) {
+      const hasPermission = await checkOrRequestMicPermission();
+      if (!hasPermission) {
+        btnToggleRecord.disabled = false;
+        return;
+      }
+    }
+
     // Start Recording
     const options = {
       resolution: resolutionSelect.value,
