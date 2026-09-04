@@ -2,6 +2,8 @@ chrome.runtime.onInstalled.addListener(() => {
   console.log('Local Screen & Video Recorder extension installed.');
 });
 
+let previewWindowId = null;
+
 // Manage offscreen document creation
 async function ensureOffscreenDocument() {
   const existingContexts = await chrome.runtime.getContexts({
@@ -36,6 +38,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // Update badge
         chrome.action.setBadgeText({ text: 'REC' });
         chrome.action.setBadgeBackgroundColor({ color: '#ef4444' });
+
+        // If webcam is enabled, open a floating live preview window so the user can see themselves
+        if (message.data && message.data.cam) {
+          try {
+            const devParam = message.data.camDeviceId ? `?deviceId=${encodeURIComponent(message.data.camDeviceId)}` : '';
+            const previewWin = await chrome.windows.create({
+              url: `camera-preview.html${devParam}`,
+              type: 'popup',
+              width: 340,
+              height: 260,
+              top: 50,
+              left: 50,
+              focused: true
+            });
+            previewWindowId = previewWin.id;
+          } catch (winErr) {
+            console.warn('Could not open preview window:', winErr);
+          }
+        }
         
         sendResponse(response || { success: true });
       } catch (err) {
@@ -50,6 +71,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         });
         
         chrome.action.setBadgeText({ text: '' });
+
+        // Close camera preview window if open
+        if (previewWindowId) {
+          try {
+            await chrome.windows.remove(previewWindowId);
+          } catch (e) {}
+          previewWindowId = null;
+        }
+
         sendResponse(response || { success: true });
       } catch (err) {
         console.error('Error stopping recording:', err);

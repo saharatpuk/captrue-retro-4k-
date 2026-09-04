@@ -11,6 +11,12 @@
     "unlimitedStorage",
     "offscreen"
   ],
+  "web_accessible_resources": [
+    {
+      "resources": ["camera-preview.html", "camera-preview.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
   "action": {
     "default_popup": "popup.html",
     "default_title": "Captrue Retro 4K",
