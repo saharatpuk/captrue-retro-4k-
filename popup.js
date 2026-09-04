@@ -8,13 +8,21 @@ const timerText = document.getElementById('timerText');
 const controlsArea = document.getElementById('controlsArea');
 const resolutionSelect = document.getElementById('resolutionSelect');
 const micToggle = document.getElementById('micToggle');
+const camToggle = document.getElementById('camToggle');
+const camPositionRow = document.getElementById('camPositionRow');
+const camPositionSelect = document.getElementById('camPositionSelect');
 const systemAudioToggle = document.getElementById('systemAudioToggle');
 const btnOpenItems = document.getElementById('btnOpenItems');
 
 // Load stored preferences
-chrome.storage.local.get(['pref_res', 'pref_mic', 'pref_sys'], (res) => {
+chrome.storage.local.get(['pref_res', 'pref_mic', 'pref_cam', 'pref_cam_pos', 'pref_sys'], (res) => {
   if (res.pref_res) resolutionSelect.value = res.pref_res;
   if (res.pref_mic !== undefined) micToggle.checked = res.pref_mic;
+  if (res.pref_cam !== undefined) {
+    camToggle.checked = res.pref_cam;
+    camPositionRow.style.display = res.pref_cam ? 'flex' : 'none';
+  }
+  if (res.pref_cam_pos) camPositionSelect.value = res.pref_cam_pos;
   if (res.pref_sys !== undefined) systemAudioToggle.checked = res.pref_sys;
 });
 
@@ -25,39 +33,65 @@ resolutionSelect.addEventListener('change', () => {
 micToggle.addEventListener('change', async () => {
   chrome.storage.local.set({ pref_mic: micToggle.checked });
   if (micToggle.checked) {
-    await requestMicPermission();
+    await requestMediaPermission({ audio: true });
   }
+});
+camToggle.addEventListener('change', async () => {
+  const isEnabled = camToggle.checked;
+  camPositionRow.style.display = isEnabled ? 'flex' : 'none';
+  chrome.storage.local.set({ pref_cam: isEnabled });
+  if (isEnabled) {
+    await requestMediaPermission({ video: true });
+  }
+});
+camPositionSelect.addEventListener('change', () => {
+  chrome.storage.local.set({ pref_cam_pos: camPositionSelect.value });
 });
 systemAudioToggle.addEventListener('change', () => {
   chrome.storage.local.set({ pref_sys: systemAudioToggle.checked });
 });
 
-async function requestMicPermission() {
+async function requestMediaPermission(constraints = { audio: true }) {
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
     // Stop immediately once permission is acquired
     stream.getTracks().forEach(t => t.stop());
     return true;
   } catch (err) {
-    console.warn('Microphone permission request failed/dismissed in popup:', err);
+    console.warn('Media permission request failed/dismissed in popup:', err);
     // If permission prompt fails in popup, open request-mic tab
     chrome.tabs.create({ url: 'request-mic.html' });
     return false;
   }
 }
 
-async function checkOrRequestMicPermission() {
+async function checkOrRequestMediaPermissions(needMic, needCam) {
+  if (!needMic && !needCam) return true;
+
+  let micOk = !needMic;
+  let camOk = !needCam;
+
   if (navigator.permissions && navigator.permissions.query) {
     try {
-      const status = await navigator.permissions.query({ name: 'microphone' });
-      if (status.state === 'granted') {
-        return true;
+      if (needMic) {
+        const status = await navigator.permissions.query({ name: 'microphone' });
+        if (status.state === 'granted') micOk = true;
+      }
+      if (needCam) {
+        const status = await navigator.permissions.query({ name: 'camera' });
+        if (status.state === 'granted') camOk = true;
       }
     } catch (e) {
       // Ignore and fallback to getUserMedia
     }
   }
-  return await requestMicPermission();
+
+  if (micOk && camOk) return true;
+
+  return await requestMediaPermission({
+    audio: needMic,
+    video: needCam
+  });
 }
 
 // Check current recording state on popup open
@@ -87,9 +121,12 @@ btnToggleRecord.addEventListener('click', async () => {
   const isCurrentlyRecording = response && response.isRecording;
 
   if (!isCurrentlyRecording) {
-    // Check microphone permission first if enabled
-    if (micToggle.checked) {
-      const hasPermission = await checkOrRequestMicPermission();
+    // Check permissions if enabled
+    const needMic = micToggle.checked;
+    const needCam = camToggle.checked;
+
+    if (needMic || needCam) {
+      const hasPermission = await checkOrRequestMediaPermissions(needMic, needCam);
       if (!hasPermission) {
         btnToggleRecord.disabled = false;
         return;
@@ -100,6 +137,8 @@ btnToggleRecord.addEventListener('click', async () => {
     const options = {
       resolution: resolutionSelect.value,
       mic: micToggle.checked,
+      cam: camToggle.checked,
+      camPosition: camPositionSelect.value || 'bottom-right',
       system: systemAudioToggle.checked
     };
 

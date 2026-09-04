@@ -337,6 +337,34 @@
       <div class="form-row">
         <div class="label-group">
           <div class="label-icon">
+            <svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+          </div>
+          <span>กล้องหน้า (Webcam PiP)</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="camToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="form-row" id="camPositionRow" style="display: none;">
+        <div class="label-group">
+          <div class="label-icon">
+            <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM13 13h5v5h-5z"/></svg>
+          </div>
+          <span>ตำแหน่งมุมกล้อง</span>
+        </div>
+        <select id="camPositionSelect">
+          <option value="bottom-right" selected>ขวาล่าง (Bottom Right)</option>
+          <option value="bottom-left">ซ้ายล่าง (Bottom Left)</option>
+          <option value="top-right">ขวาบน (Top Right)</option>
+          <option value="top-left">ซ้ายบน (Top Left)</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <div class="label-group">
+          <div class="label-icon">
             <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
           </div>
           <span>เสียงระบบ / คอม</span>

@@ -2,9 +2,11 @@ let mediaRecorder = null;
 let recordedChunks = [];
 let screenStream = null;
 let micStream = null;
+let camStream = null;
 let audioContext = null;
 let recordingStartTime = 0;
 let recordingConfig = null;
+let pipRenderLoopId = null;
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.target !== 'offscreen') return;
@@ -35,6 +37,8 @@ async function startRecording(config) {
   recordingConfig = config || {};
   const resolution = recordingConfig.resolution || '4k'; // '4k', '2k', '1080p'
   const recordMic = !!recordingConfig.mic;
+  const recordCam = !!recordingConfig.cam;
+  const camPosition = recordingConfig.camPosition || 'bottom-right';
   const recordSystem = !!recordingConfig.system;
 
   // Setup resolution constraints
@@ -95,10 +99,34 @@ async function startRecording(config) {
     }
   }
 
-  // 3. Audio Mixing using Web Audio API
+  // 3. Get Webcam Stream if enabled
+  if (recordCam) {
+    try {
+      camStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          frameRate: { ideal: 30 }
+        }
+      });
+      console.log('Camera stream successfully acquired:', camStream.getVideoTracks().length);
+    } catch (err) {
+      console.warn('Camera permission denied or failed in offscreen:', err);
+      camStream = null;
+    }
+  }
+
+  // 4. Video Track Setup (Direct Screen Stream or PiP Composite via Canvas)
+  let videoTrackToRecord = null;
+  if (camStream && camStream.getVideoTracks().length > 0) {
+    videoTrackToRecord = await createPiPStream(screenStream, camStream, width, height, frameRate, camPosition);
+  } else {
+    videoTrackToRecord = screenStream.getVideoTracks()[0];
+  }
+
+  // 5. Audio Mixing using Web Audio API
   let combinedStream = new MediaStream();
-  // Add video track
-  combinedStream.addTrack(screenStream.getVideoTracks()[0]);
+  combinedStream.addTrack(videoTrackToRecord);
 
   const hasSystemAudio = screenStream.getAudioTracks().length > 0;
   const hasMicAudio = micStream && micStream.getAudioTracks().length > 0;
@@ -172,6 +200,7 @@ async function startRecording(config) {
       durationMs: durationMs,
       resolution: resolution.toUpperCase(),
       hasMic: hasMicAudio,
+      hasCam: !!(camStream && camStream.getVideoTracks().length > 0),
       hasSystemAudio: hasSystemAudio,
       thumbnail: thumbnail,
       createdAt: Date.now()
@@ -197,6 +226,10 @@ async function startRecording(config) {
 }
 
 function cleanUpStreams() {
+  if (pipRenderLoopId) {
+    cancelAnimationFrame(pipRenderLoopId);
+    pipRenderLoopId = null;
+  }
   if (screenStream) {
     screenStream.getTracks().forEach(t => t.stop());
     screenStream = null;
@@ -204,6 +237,10 @@ function cleanUpStreams() {
   if (micStream) {
     micStream.getTracks().forEach(t => t.stop());
     micStream = null;
+  }
+  if (camStream) {
+    camStream.getTracks().forEach(t => t.stop());
+    camStream = null;
   }
   if (audioContext) {
     audioContext.close().catch(() => {});
@@ -233,6 +270,7 @@ async function stopRecording() {
         durationMs: durationMs,
         resolution: (recordingConfig.resolution || '4k').toUpperCase(),
         hasMic: !!recordingConfig.mic,
+        hasCam: !!(camStream && camStream.getVideoTracks().length > 0),
         hasSystemAudio: !!recordingConfig.system,
         thumbnail: thumbnail,
         createdAt: Date.now()
@@ -285,4 +323,108 @@ function generateThumbnail(blob) {
       resolve(null);
     };
   });
+}
+
+/**
+ * Composites Screen Video + Webcam PiP into a single video track via Canvas
+ */
+async function createPiPStream(screenMediaStream, webcamMediaStream, targetWidth, targetHeight, fps, position) {
+  const canvas = document.createElement('canvas');
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
+  const ctx = canvas.getContext('2d', { alpha: false });
+
+  const screenVideo = document.createElement('video');
+  screenVideo.srcObject = screenMediaStream;
+  screenVideo.muted = true;
+  screenVideo.playsInline = true;
+
+  const camVideo = document.createElement('video');
+  camVideo.srcObject = webcamMediaStream;
+  camVideo.muted = true;
+  camVideo.playsInline = true;
+
+  await Promise.all([
+    new Promise((resolve) => {
+      screenVideo.onloadedmetadata = () => screenVideo.play().then(resolve).catch(resolve);
+    }),
+    new Promise((resolve) => {
+      camVideo.onloadedmetadata = () => camVideo.play().then(resolve).catch(resolve);
+    })
+  ]);
+
+  // PiP circle sizing: ~22% of min(width, height)
+  const pipSize = Math.round(Math.min(targetWidth, targetHeight) * 0.22);
+  const padding = Math.round(Math.min(targetWidth, targetHeight) * 0.03);
+  const radius = pipSize / 2;
+
+  let centerX = targetWidth - padding - radius;
+  let centerY = targetHeight - padding - radius;
+
+  if (position === 'top-left') {
+    centerX = padding + radius;
+    centerY = padding + radius;
+  } else if (position === 'top-right') {
+    centerX = targetWidth - padding - radius;
+    centerY = padding + radius;
+  } else if (position === 'bottom-left') {
+    centerX = padding + radius;
+    centerY = targetHeight - padding - radius;
+  } else {
+    // bottom-right
+    centerX = targetWidth - padding - radius;
+    centerY = targetHeight - padding - radius;
+  }
+
+  function render() {
+    // 1. Draw screen video
+    if (screenVideo.readyState >= 2) {
+      ctx.drawImage(screenVideo, 0, 0, targetWidth, targetHeight);
+    } else {
+      ctx.fillStyle = '#0b0d13';
+      ctx.fillRect(0, 0, targetWidth, targetHeight);
+    }
+
+    // 2. Draw webcam in circular PiP frame
+    if (camVideo.readyState >= 2) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.clip();
+
+      // Crop center of webcam feed
+      const vw = camVideo.videoWidth || 1280;
+      const vh = camVideo.videoHeight || 720;
+      const minDim = Math.min(vw, vh);
+      const sx = (vw - minDim) / 2;
+      const sy = (vh - minDim) / 2;
+
+      ctx.drawImage(
+        camVideo,
+        sx, sy, minDim, minDim,
+        centerX - radius, centerY - radius, pipSize, pipSize
+      );
+
+      ctx.restore();
+
+      // Draw cyber retro glowing border around PiP circle
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      ctx.lineWidth = Math.max(4, Math.round(pipSize * 0.02));
+      ctx.strokeStyle = '#00ffcc';
+      ctx.shadowColor = 'rgba(0, 255, 204, 0.6)';
+      ctx.shadowBlur = 12;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    pipRenderLoopId = requestAnimationFrame(render);
+  }
+
+  render();
+
+  const canvasStream = canvas.captureStream(fps || 60);
+  return canvasStream.getVideoTracks()[0];
 }
