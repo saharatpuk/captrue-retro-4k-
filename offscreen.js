@@ -102,17 +102,26 @@ async function startRecording(config) {
   // 3. Get Webcam Stream if enabled
   if (recordCam) {
     try {
-      camStream = await navigator.mediaDevices.getUserMedia({
+      const camConstraints = {
         video: {
           width: { ideal: 1280 },
           height: { ideal: 720 },
           frameRate: { ideal: 30 }
         }
-      });
+      };
+      if (recordingConfig.camDeviceId) {
+        camConstraints.video.deviceId = { exact: recordingConfig.camDeviceId };
+      }
+      camStream = await navigator.mediaDevices.getUserMedia(camConstraints);
       console.log('Camera stream successfully acquired:', camStream.getVideoTracks().length);
     } catch (err) {
-      console.warn('Camera permission denied or failed in offscreen:', err);
-      camStream = null;
+      console.warn('Camera permission or deviceId acquisition failed, trying generic video:', err);
+      try {
+        camStream = await navigator.mediaDevices.getUserMedia({ video: true });
+      } catch (fallbackErr) {
+        console.warn('Generic camera access also failed:', fallbackErr);
+        camStream = null;
+      }
     }
   }
 

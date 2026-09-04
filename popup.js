@@ -9,18 +9,24 @@ const controlsArea = document.getElementById('controlsArea');
 const resolutionSelect = document.getElementById('resolutionSelect');
 const micToggle = document.getElementById('micToggle');
 const camToggle = document.getElementById('camToggle');
+const camDeviceRow = document.getElementById('camDeviceRow');
+const camDeviceSelect = document.getElementById('camDeviceSelect');
 const camPositionRow = document.getElementById('camPositionRow');
 const camPositionSelect = document.getElementById('camPositionSelect');
 const systemAudioToggle = document.getElementById('systemAudioToggle');
 const btnOpenItems = document.getElementById('btnOpenItems');
 
 // Load stored preferences
-chrome.storage.local.get(['pref_res', 'pref_mic', 'pref_cam', 'pref_cam_pos', 'pref_sys'], (res) => {
+chrome.storage.local.get(['pref_res', 'pref_mic', 'pref_cam', 'pref_cam_device', 'pref_cam_pos', 'pref_sys'], (res) => {
   if (res.pref_res) resolutionSelect.value = res.pref_res;
   if (res.pref_mic !== undefined) micToggle.checked = res.pref_mic;
   if (res.pref_cam !== undefined) {
     camToggle.checked = res.pref_cam;
+    camDeviceRow.style.display = res.pref_cam ? 'flex' : 'none';
     camPositionRow.style.display = res.pref_cam ? 'flex' : 'none';
+    if (res.pref_cam) {
+      populateCameraDevices(res.pref_cam_device);
+    }
   }
   if (res.pref_cam_pos) camPositionSelect.value = res.pref_cam_pos;
   if (res.pref_sys !== undefined) systemAudioToggle.checked = res.pref_sys;
@@ -38,11 +44,18 @@ micToggle.addEventListener('change', async () => {
 });
 camToggle.addEventListener('change', async () => {
   const isEnabled = camToggle.checked;
+  camDeviceRow.style.display = isEnabled ? 'flex' : 'none';
   camPositionRow.style.display = isEnabled ? 'flex' : 'none';
   chrome.storage.local.set({ pref_cam: isEnabled });
   if (isEnabled) {
-    await requestMediaPermission({ video: true });
+    const granted = await requestMediaPermission({ video: true });
+    if (granted) {
+      await populateCameraDevices();
+    }
   }
+});
+camDeviceSelect.addEventListener('change', () => {
+  chrome.storage.local.set({ pref_cam_device: camDeviceSelect.value });
 });
 camPositionSelect.addEventListener('change', () => {
   chrome.storage.local.set({ pref_cam_pos: camPositionSelect.value });
@@ -50,6 +63,37 @@ camPositionSelect.addEventListener('change', () => {
 systemAudioToggle.addEventListener('change', () => {
   chrome.storage.local.set({ pref_sys: systemAudioToggle.checked });
 });
+
+async function populateCameraDevices(preferredDeviceId = null) {
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const videoDevices = devices.filter(d => d.kind === 'videoinput');
+    
+    camDeviceSelect.innerHTML = '';
+    if (videoDevices.length === 0) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = 'ไม่พบกล้องในระบบ';
+      camDeviceSelect.appendChild(opt);
+      return;
+    }
+
+    videoDevices.forEach((device, idx) => {
+      const opt = document.createElement('option');
+      opt.value = device.deviceId;
+      opt.textContent = device.label || `กล้องตัวที่ ${idx + 1}`;
+      if (preferredDeviceId && device.deviceId === preferredDeviceId) {
+        opt.selected = true;
+      }
+      camDeviceSelect.appendChild(opt);
+    });
+
+    // Save current selected device
+    chrome.storage.local.set({ pref_cam_device: camDeviceSelect.value });
+  } catch (err) {
+    console.error('enumerateDevices error:', err);
+  }
+}
 
 async function requestMediaPermission(constraints = { audio: true }) {
   try {
@@ -138,6 +182,7 @@ btnToggleRecord.addEventListener('click', async () => {
       resolution: resolutionSelect.value,
       mic: micToggle.checked,
       cam: camToggle.checked,
+      camDeviceId: camDeviceSelect.value || null,
       camPosition: camPositionSelect.value || 'bottom-right',
       system: systemAudioToggle.checked
     };
