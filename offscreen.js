@@ -119,7 +119,12 @@ async function startRecording(config) {
   // 4. Video Track Setup (Direct Screen Stream or PiP Composite via Canvas)
   let videoTrackToRecord = null;
   if (camStream && camStream.getVideoTracks().length > 0) {
-    videoTrackToRecord = await createPiPStream(screenStream, camStream, width, height, frameRate, camPosition);
+    try {
+      videoTrackToRecord = await createPiPStream(screenStream, camStream, width, height, frameRate, camPosition);
+    } catch (pipErr) {
+      console.error('Error creating PiP composite stream, fallback to screen stream:', pipErr);
+      videoTrackToRecord = screenStream.getVideoTracks()[0];
+    }
   } else {
     videoTrackToRecord = screenStream.getVideoTracks()[0];
   }
@@ -227,7 +232,7 @@ async function startRecording(config) {
 
 function cleanUpStreams() {
   if (pipRenderLoopId) {
-    cancelAnimationFrame(pipRenderLoopId);
+    clearInterval(pipRenderLoopId);
     pipRenderLoopId = null;
   }
   if (screenStream) {
@@ -332,26 +337,46 @@ async function createPiPStream(screenMediaStream, webcamMediaStream, targetWidth
   const canvas = document.createElement('canvas');
   canvas.width = targetWidth;
   canvas.height = targetHeight;
+  // Append to body so Chromium treats canvas as active
+  canvas.style.position = 'fixed';
+  canvas.style.top = '-9999px';
+  canvas.style.left = '-9999px';
+  canvas.style.width = '1px';
+  canvas.style.height = '1px';
+  document.body.appendChild(canvas);
+
   const ctx = canvas.getContext('2d', { alpha: false });
 
   const screenVideo = document.createElement('video');
   screenVideo.srcObject = screenMediaStream;
   screenVideo.muted = true;
   screenVideo.playsInline = true;
+  document.body.appendChild(screenVideo);
 
   const camVideo = document.createElement('video');
   camVideo.srcObject = webcamMediaStream;
   camVideo.muted = true;
   camVideo.playsInline = true;
+  document.body.appendChild(camVideo);
 
-  await Promise.all([
-    new Promise((resolve) => {
-      screenVideo.onloadedmetadata = () => screenVideo.play().then(resolve).catch(resolve);
-    }),
-    new Promise((resolve) => {
-      camVideo.onloadedmetadata = () => camVideo.play().then(resolve).catch(resolve);
-    })
-  ]);
+  const playVideo = (v) => {
+    return new Promise((resolve) => {
+      let resolved = false;
+      const done = () => {
+        if (!resolved) {
+          resolved = true;
+          resolve();
+        }
+      };
+      v.onloadedmetadata = () => {
+        v.play().then(done).catch(done);
+      };
+      // Fallback timeout in case onloadedmetadata hangs in offscreen
+      setTimeout(done, 1500);
+    });
+  };
+
+  await Promise.all([playVideo(screenVideo), playVideo(camVideo)]);
 
   // PiP circle sizing: ~22% of min(width, height)
   const pipSize = Math.round(Math.min(targetWidth, targetHeight) * 0.22);
@@ -376,9 +401,9 @@ async function createPiPStream(screenMediaStream, webcamMediaStream, targetWidth
     centerY = targetHeight - padding - radius;
   }
 
-  function render() {
+  function renderFrame() {
     // 1. Draw screen video
-    if (screenVideo.readyState >= 2) {
+    if (screenVideo.videoWidth > 0) {
       ctx.drawImage(screenVideo, 0, 0, targetWidth, targetHeight);
     } else {
       ctx.fillStyle = '#0b0d13';
@@ -386,7 +411,7 @@ async function createPiPStream(screenMediaStream, webcamMediaStream, targetWidth
     }
 
     // 2. Draw webcam in circular PiP frame
-    if (camVideo.readyState >= 2) {
+    if (camVideo.videoWidth > 0) {
       ctx.save();
       ctx.beginPath();
       ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
@@ -394,8 +419,8 @@ async function createPiPStream(screenMediaStream, webcamMediaStream, targetWidth
       ctx.clip();
 
       // Crop center of webcam feed
-      const vw = camVideo.videoWidth || 1280;
-      const vh = camVideo.videoHeight || 720;
+      const vw = camVideo.videoWidth;
+      const vh = camVideo.videoHeight;
       const minDim = Math.min(vw, vh);
       const sx = (vw - minDim) / 2;
       const sy = (vh - minDim) / 2;
@@ -419,12 +444,16 @@ async function createPiPStream(screenMediaStream, webcamMediaStream, targetWidth
       ctx.stroke();
       ctx.restore();
     }
-
-    pipRenderLoopId = requestAnimationFrame(render);
   }
 
-  render();
+  // Draw first frame immediately
+  renderFrame();
 
-  const canvasStream = canvas.captureStream(fps || 60);
+  // Use setInterval for deterministic rendering in background/offscreen context
+  const targetFps = fps || 60;
+  const intervalMs = Math.round(1000 / targetFps);
+  pipRenderLoopId = setInterval(renderFrame, intervalMs);
+
+  const canvasStream = canvas.captureStream(targetFps);
   return canvasStream.getVideoTracks()[0];
 }
