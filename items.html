@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyber Vault - Captrue Retro 4K</title>
+  <style>
+    :root {
+      --neon-green: #22c55e;
+      --laser-green: #4ade80;
+      --glow-green: #00ff66;
+      --bg-terminal: #040805;
+      --card-terminal: #09120c;
+      --border-terminal: rgba(34, 197, 94, 0.2);
+      --border-terminal-hover: rgba(34, 197, 94, 0.6);
+      --text-green: #f0fdf4;
+      --text-muted: #86efac;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: "JetBrains Mono", "Courier New", Consolas, monospace, -apple-system, sans-serif;
+    }
+    body {
+      background-color: var(--bg-terminal);
+      color: var(--text-green);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    /* Subtle scanlines */
+    body::before {
+      content: " ";
+      position: fixed;
+      top: 0; left: 0; bottom: 0; right: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%);
+      background-size: 100% 4px;
+      z-index: 1000;
+      pointer-events: none;
+      opacity: 0.5;
+    }
+    header {
+      background-color: #060e08;
+      border-bottom: 1px solid var(--border-terminal);
+      padding: 18px 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .brand-logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      border: 1px solid var(--neon-green);
+      box-shadow: 0 0 15px rgba(34, 197, 94, 0.4);
+    }
+    .brand-text {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: var(--laser-green);
+      text-shadow: 0 0 12px rgba(34, 197, 94, 0.6);
+    }
+    .brand-badge {
+      background: rgba(34, 197, 94, 0.12);
+      border: 1px solid var(--neon-green);
+      color: var(--glow-green);
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 4px;
+      margin-left: 8px;
+      letter-spacing: 1px;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .search-input {
+      background: #09120c;
+      border: 1px solid var(--border-terminal);
+      border-radius: 6px;
+      padding: 9px 16px;
+      color: var(--glow-green);
+      font-size: 13px;
+      outline: none;
+      width: 280px;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    .search-input:focus {
+      border-color: var(--neon-green);
+      box-shadow: 0 0 12px rgba(34, 197, 94, 0.4);
+    }
+
+    main {
+      flex: 1;
+      padding: 36px;
+      max-width: 1440px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .items-count {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    /* Grid Layout */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+      gap: 26px;
+    }
+
+    .card {
+      background: var(--card-terminal);
+      border: 1px solid var(--border-terminal);
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.25s;
+    }
+    .card:hover {
+      transform: translateY(-3px);
+      border-color: var(--border-terminal-hover);
+      box-shadow: 0 0 25px rgba(34, 197, 94, 0.25);
+    }
+
+    .thumbnail-box {
+      position: relative;
+      aspect-ratio: 16 / 9;
+      background: #020503;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border-bottom: 1px solid var(--border-terminal);
+    }
+    .thumbnail-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s;
+    }
+    .thumbnail-box:hover .thumbnail-img {
+      transform: scale(1.03);
+    }
+    .play-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(2px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .thumbnail-box:hover .play-overlay {
+      opacity: 1;
+    }
+    .play-button-icon {
+      width: 52px;
+      height: 52px;
+      background: rgba(34, 197, 94, 0.25);
+      border: 1px solid var(--neon-green);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--glow-green);
+      box-shadow: 0 0 20px rgba(34, 197, 94, 0.6);
+    }
+    .badge-duration {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.9);
+      color: var(--glow-green);
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--border-terminal);
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .badge-res {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(34, 197, 94, 0.2);
+      border: 1px solid var(--neon-green);
+      color: var(--laser-green);
+      font-size: 10px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 4px;
+      letter-spacing: 1px;
+      text-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+    }
+
+    .card-body {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+    .card-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-green);
+      margin-bottom: 10px;
+      line-height: 1.4;
+      cursor: pointer;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .card-title:hover {
+      color: var(--glow-green);
+      text-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+    }
+    .card-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .card-meta span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .card-actions {
+      margin-top: auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 12px;
+      border-top: 1px solid var(--border-terminal);
+    }
+    .btn-action {
+      background: rgba(34, 197, 94, 0.08);
+      border: 1px solid var(--border-terminal);
+      color: var(--laser-green);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .btn-action:hover {
+      background: rgba(34, 197, 94, 0.2);
+      border-color: var(--neon-green);
+      color: var(--glow-green);
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.3);
+    }
+    .btn-download {
+      background: rgba(34, 197, 94, 0.25);
+      border-color: var(--neon-green);
+      color: #fff;
+    }
+    .btn-download:hover {
+      background: rgba(34, 197, 94, 0.45);
+      box-shadow: 0 0 15px rgba(34, 197, 94, 0.6);
+    }
+    .btn-delete {
+      color: #f87171;
+      background: rgba(220, 38, 38, 0.08);
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+    .btn-delete:hover {
+      background: rgba(220, 38, 38, 0.2);
+      border-color: #ef4444;
+      color: #ef4444;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+    }
+
+    /* Video Player Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.92);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      padding: 24px;
+    }
+    .modal-content {
+      background: #060e08;
+      border: 1px solid var(--neon-green);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 1040px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      max-height: 92vh;
+      box-shadow: 0 0 40px rgba(34, 197, 94, 0.35);
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border-terminal);
+    }
+    .modal-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--laser-green);
+      text-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 24px;
+      line-height: 1;
+      padding: 4px;
+      transition: color 0.2s;
+    }
+    .modal-close:hover {
+      color: var(--glow-green);
+    }
+    .modal-video-container {
+      background: #000;
+      position: relative;
+      width: 100%;
+      max-height: 65vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-video-container video {
+      max-width: 100%;
+      max-height: 65vh;
+      outline: none;
+    }
+    .modal-footer {
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--border-terminal);
+      background: #060e08;
+    }
+
+    /* Empty State */
+    .empty-state {
+      display: none;
+      text-align: center;
+      padding: 100px 20px;
+    }
+    .empty-icon {
+      width: 68px;
+      height: 68px;
+      margin: 0 auto 18px;
+      fill: #166534;
+    }
+    .empty-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--laser-green);
+      margin-bottom: 8px;
+      letter-spacing: 0.5px;
+    }
+    .empty-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <img src="icons/icon48.png" alt="Logo" class="brand-logo">
+      <span class="brand-text">Captrue Retro</span>
+      <span class="brand-badge">CYBER VAULT</span>
+    </div>
+    <div class="header-actions">
+      <input type="text" id="searchInput" class="search-input" placeholder="&gt; SEARCH_RECORDINGS...">
+    </div>
+  </header>
+
+  <main>
+    <div class="toolbar">
+      <div class="items-count" id="itemsCount">&gt; QUERYING LOCAL DATABASE...</div>
+    </div>
+
+    <div class="empty-state" id="emptyState">
+      <svg class="empty-icon" viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>
+      <div class="empty-title">[NO RECORDINGS FOUND]</div>
+      <div class="empty-subtitle">คลิกที่ไอคอน Captrue Retro บนแท็บ Chrome เพื่อเริ่มบันทึกหน้าจอ</div>
+    </div>
+
+    <div class="grid" id="recordingsGrid"></div>
+  </main>
+
+  <!-- Video Modal -->
+  <div class="modal-backdrop" id="playerModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title" id="modalVideoTitle">REPLAY_STREAM</div>
+        <button class="modal-close" id="btnCloseModal">&times;</button>
+      </div>
+      <div class="modal-video-container">
+        <video id="modalVideo" controls></video>
+      </div>
+      <div class="modal-footer">
+        <div id="modalVideoMeta" style="font-size: 12px; color: var(--text-muted); font-weight: 600;"></div>
+        <button class="btn-action btn-download" id="btnModalDownload">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+          DOWNLOAD_FILE
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="db.js"></script>
+  <script src="items.js"></script>
+</body>
+</html>

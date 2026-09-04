@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "Captrue Retro 4K - Cyber Terminal Screen Recorder",
+  "version": "1.2.0",
+  "description": "Retro Cyber Cinema 4K Screen Recorder. 100% Local, Hacker-grade privacy, zero server leaks.",
+  "permissions": [
+    "desktopCapture",
+    "tabCapture",
+    "tabs",
+    "storage",
+    "unlimitedStorage",
+    "offscreen"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Captrue Retro 4K",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}
