@@ -3,408 +3,634 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Captrue Retro 4K</title>
+  <title>Capture Pro 4K</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --neon-green: #22c55e;
-      --laser-green: #4ade80;
-      --glow-green: #00ff66;
-      --dark-terminal: #050a07;
-      --dark-card: #0c1510;
-      --border-green: rgba(34, 197, 94, 0.25);
-      --text-green: #dcfce7;
-      --text-muted: #86efac;
+      --bg-main: #0b0f17;
+      --card-bg: rgba(18, 26, 41, 0.7);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-hover-border: rgba(0, 113, 227, 0.4);
+      --primary: #0071e3;
+      --primary-hover: #0077ed;
+      --primary-glow: rgba(0, 113, 227, 0.35);
+      --accent-cyan: #00d2ff;
+      --text-main: #f5f7fa;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --select-bg: #141c2c;
+      --select-border: rgba(255, 255, 255, 0.12);
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --switch-off: #273549;
     }
+
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: "JetBrains Mono", "Courier New", Consolas, monospace, -apple-system, sans-serif;
+      font-family: 'Plus Jakarta Sans', 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
     }
+
     body {
-      width: 350px;
-      background-color: var(--dark-terminal);
-      color: var(--text-green);
-      padding: 16px;
+      width: 360px;
+      min-width: 360px;
+      background: radial-gradient(circle at 50% 0%, #152238 0%, #0b0f17 100%);
+      color: var(--text-main);
+      padding: 18px 18px 20px;
       user-select: none;
-      position: relative;
+      overflow-x: hidden;
     }
-    /* CRT subtle scanline */
-    body::before {
-      content: " ";
+
+    /* Ambient background blur blobs */
+    .ambient-glow {
       position: absolute;
-      top: 0; left: 0; bottom: 0; right: 0;
-      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
-      background-size: 100% 4px;
-      z-index: 100;
+      top: -40px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 280px;
+      height: 90px;
+      background: radial-gradient(ellipse, rgba(0, 113, 227, 0.22) 0%, transparent 70%);
       pointer-events: none;
-      opacity: 0.6;
+      z-index: 0;
     }
+
+    .app-container {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Header */
     .header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 16px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--border-green);
+      padding-bottom: 2px;
     }
+
     .brand {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
     }
-    .brand-logo {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-      box-shadow: 0 0 14px rgba(34, 197, 94, 0.4);
-      border: 1px solid var(--neon-green);
-      object-fit: cover;
-    }
-    .brand-info {
-      display: flex;
-      flex-direction: column;
-    }
-    .brand-name {
-      font-size: 14px;
-      font-weight: 800;
-      letter-spacing: 0.5px;
-      color: var(--laser-green);
-      text-shadow: 0 0 10px rgba(34, 197, 94, 0.6);
-      line-height: 1.2;
-    }
-    .tag-4k {
-      display: inline-block;
-      align-self: flex-start;
-      background: rgba(34, 197, 94, 0.15);
-      border: 1px solid var(--neon-green);
-      color: var(--laser-green);
-      font-size: 9px;
-      font-weight: 800;
-      padding: 1px 5px;
-      border-radius: 4px;
-      letter-spacing: 0.5px;
-      margin-top: 3px;
-    }
-    .items-link {
-      background: rgba(34, 197, 94, 0.08);
-      border: 1px solid var(--border-green);
-      color: var(--laser-green);
-      cursor: pointer;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 6px 10px;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      transition: all 0.2s;
-    }
-    .items-link:hover {
-      background: rgba(34, 197, 94, 0.2);
-      border-color: var(--neon-green);
-      box-shadow: 0 0 12px rgba(34, 197, 94, 0.3);
-    }
-    .section-title {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #4ade80;
-      margin-bottom: 8px;
-      font-weight: 800;
-      opacity: 0.8;
-    }
-    .control-group {
-      background: var(--dark-card);
-      border: 1px solid var(--border-green);
+
+    .brand-icon-wrap {
+      position: relative;
+      width: 36px;
+      height: 36px;
       border-radius: 10px;
-      padding: 12px 14px;
-      margin-bottom: 16px;
-      box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.8);
-    }
-    .form-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px 0;
-    }
-    .form-row:not(:last-child) {
-      border-bottom: 1px solid rgba(34, 197, 94, 0.1);
-    }
-    .label-group {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 12px;
-      color: #86efac;
-      font-weight: 600;
-    }
-    .label-icon {
-      width: 26px;
-      height: 26px;
-      border-radius: 6px;
-      background: rgba(34, 197, 94, 0.1);
-      border: 1px solid rgba(34, 197, 94, 0.25);
+      background: linear-gradient(135deg, #0071e3 0%, #00c6ff 100%);
       display: flex;
       align-items: center;
       justify-content: center;
+      box-shadow: 0 4px 14px rgba(0, 113, 227, 0.4);
     }
-    .label-icon svg {
-      width: 14px;
-      height: 14px;
-      fill: var(--neon-green);
+
+    .brand-icon-wrap svg {
+      width: 20px;
+      height: 20px;
+      fill: #ffffff;
     }
-    select {
-      background: #050a07;
-      color: var(--laser-green);
-      border: 1px solid var(--border-green);
-      border-radius: 6px;
-      padding: 6px 8px;
-      font-size: 11px;
+
+    .brand-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-title {
+      font-size: 15px;
       font-weight: 700;
+      letter-spacing: -0.2px;
+      color: #ffffff;
+      line-height: 1.2;
+    }
+
+    .brand-subtitle {
+      font-size: 10.5px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 2px;
+    }
+
+    .badge-res-hdr {
+      background: rgba(0, 210, 255, 0.12);
+      border: 1px solid rgba(0, 210, 255, 0.3);
+      color: var(--accent-cyan);
+      font-size: 9px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 4px;
+      letter-spacing: 0.3px;
+    }
+
+    .btn-items {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-secondary);
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .btn-items:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-1px);
+    }
+
+    /* Main Card */
+    .settings-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 6px 14px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .setting-item {
+      padding: 11px 0;
+    }
+
+    .setting-item:not(:last-child) {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* Standard horizontal row (label left, control right) */
+    .row-horizontal {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    /* Stacked layout for device dropdowns to prevent clipping */
+    .row-stacked {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .stacked-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .setting-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-main);
+      white-space: nowrap;
+    }
+
+    .icon-box {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: var(--text-secondary);
+      transition: all 0.2s;
+    }
+
+    .setting-item:hover .icon-box {
+      color: #ffffff;
+      background: rgba(0, 113, 227, 0.12);
+      border-color: rgba(0, 113, 227, 0.25);
+    }
+
+    .icon-box svg {
+      width: 15px;
+      height: 15px;
+      fill: currentColor;
+    }
+
+    /* Custom Dropdowns */
+    .select-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .select-wrap-inline {
+      width: auto;
+      max-width: 150px;
+    }
+
+    select {
+      width: 100%;
+      appearance: none;
+      -webkit-appearance: none;
+      background: var(--select-bg);
+      color: var(--text-main);
+      border: 1px solid var(--select-border);
+      border-radius: 9px;
+      padding: 8px 30px 8px 12px;
+      font-size: 12px;
+      font-weight: 500;
       outline: none;
       cursor: pointer;
-      font-family: inherit;
+      transition: all 0.2s;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
     }
+
+    select:hover {
+      border-color: rgba(255, 255, 255, 0.22);
+      background: #182235;
+    }
+
     select:focus {
-      border-color: var(--neon-green);
-      box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.25);
     }
+
+    select option {
+      background: #111827;
+      color: #f3f4f6;
+      padding: 8px;
+    }
+
+    .select-arrow {
+      position: absolute;
+      right: 10px;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      color: var(--text-muted);
+    }
+
+    .select-arrow svg {
+      width: 12px;
+      height: 12px;
+      fill: currentColor;
+    }
+
+    /* Modern Pill Switches */
     .switch {
       position: relative;
       display: inline-block;
-      width: 38px;
-      height: 20px;
+      width: 42px;
+      height: 24px;
+      flex-shrink: 0;
     }
+
     .switch input {
       opacity: 0;
       width: 0;
       height: 0;
     }
+
     .slider {
       position: absolute;
       cursor: pointer;
       top: 0; left: 0; right: 0; bottom: 0;
-      background-color: #1a2e22;
-      border: 1px solid var(--border-green);
-      transition: .3s;
-      border-radius: 20px;
+      background-color: var(--switch-off);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      transition: 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      border-radius: 24px;
     }
+
     .slider:before {
       position: absolute;
       content: "";
-      height: 14px;
-      width: 14px;
-      left: 2px;
+      height: 18px;
+      width: 18px;
+      left: 3px;
       bottom: 2px;
-      background-color: #4ade80;
-      transition: .3s;
+      background-color: #ffffff;
+      transition: 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       border-radius: 50%;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
     }
+
     input:checked + .slider {
-      background: rgba(34, 197, 94, 0.3);
-      border-color: var(--neon-green);
+      background: linear-gradient(135deg, #0071e3 0%, #00a2ff 100%);
+      border-color: rgba(0, 113, 227, 0.5);
     }
+
     input:checked + .slider:before {
-      transform: translateX(18px);
-      background-color: #00ff66;
-      box-shadow: 0 0 8px #00ff66;
+      transform: translateX(17px);
     }
-    
+
+    /* Recording Status Display */
+    .recording-status {
+      display: none;
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      border-radius: 16px;
+      padding: 20px 16px;
+      text-align: center;
+      animation: fadeIn 0.25s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .timer-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .pulse-dot {
+      width: 11px;
+      height: 11px;
+      background: var(--danger);
+      border-radius: 50%;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+      animation: pulse 1.5s infinite cubic-bezier(0.4, 0, 0.6, 1);
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .timer {
+      font-size: 26px;
+      font-weight: 700;
+      color: #ffffff;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.5px;
+    }
+
+    .status-hint {
+      font-size: 11.5px;
+      color: #fca5a5;
+      margin-top: 6px;
+      font-weight: 500;
+    }
+
+    /* Primary Action CTA Button */
     .btn-record {
       width: 100%;
-      padding: 13px;
-      border-radius: 8px;
-      border: 1px solid var(--neon-green);
-      font-size: 13px;
-      font-weight: 800;
-      letter-spacing: 0.5px;
+      padding: 13px 18px;
+      border-radius: 13px;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.1px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 10px;
-      transition: all 0.25s;
-      font-family: inherit;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      border: none;
+      outline: none;
     }
+
     .btn-start {
-      background: linear-gradient(180deg, #15803d 0%, #166534 100%);
-      color: #f0fdf4;
-      box-shadow: 0 0 20px rgba(34, 197, 94, 0.4);
-      text-shadow: 0 0 8px rgba(0, 255, 102, 0.8);
+      background: linear-gradient(135deg, #0071e3 0%, #0095ff 100%);
+      color: #ffffff;
+      box-shadow: 0 6px 20px rgba(0, 113, 227, 0.35);
     }
+
     .btn-start:hover {
-      background: linear-gradient(180deg, #16a34a 0%, #15803d 100%);
-      box-shadow: 0 0 28px rgba(34, 197, 94, 0.7);
-      transform: translateY(-1px);
+      background: linear-gradient(135deg, #0077ed 0%, #1aa3ff 100%);
+      box-shadow: 0 8px 25px rgba(0, 113, 227, 0.45);
+      transform: translateY(-1.5px);
     }
+
+    .btn-start:active {
+      transform: translateY(0);
+    }
+
     .btn-stop {
-      background: rgba(220, 38, 38, 0.2);
-      color: #f87171;
-      border: 1px solid #ef4444;
-      box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: #ffffff;
+      box-shadow: 0 6px 20px rgba(239, 68, 68, 0.35);
     }
+
     .btn-stop:hover {
-      background: rgba(220, 38, 38, 0.35);
+      background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+      box-shadow: 0 8px 25px rgba(239, 68, 68, 0.45);
+      transform: translateY(-1.5px);
     }
-    
-    .recording-status {
-      display: none;
-      margin-bottom: 16px;
-      background: rgba(220, 38, 38, 0.1);
-      border: 1px solid rgba(239, 68, 68, 0.4);
-      border-radius: 10px;
-      padding: 12px;
-      text-align: center;
-    }
-    .pulse-dot {
-      display: inline-block;
+
+    .record-bullet {
       width: 10px;
       height: 10px;
-      background: #ef4444;
       border-radius: 50%;
-      margin-right: 8px;
-      animation: pulse 1.4s infinite;
+      background: #ffffff;
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
     }
-    @keyframes pulse {
-      0% { transform: scale(0.9); opacity: 0.8; }
-      50% { transform: scale(1.3); opacity: 1; filter: drop-shadow(0 0 6px #ef4444); }
-      100% { transform: scale(0.9); opacity: 0.8; }
-    }
-    .timer {
-      font-size: 19px;
-      font-weight: 800;
-      color: #f87171;
-      text-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
-    }
-    .status-text {
-      font-size: 11px;
-      color: #fca5a5;
-      margin-top: 4px;
+
+    .stop-square {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      background: #ffffff;
     }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div class="brand">
-      <img src="icons/icon48.png" alt="Logo" class="brand-logo">
-      <div class="brand-info">
-        <span class="brand-name">Captrue Retro</span>
-        <span class="tag-4k">CYBER 4K</span>
+  <div class="ambient-glow"></div>
+
+  <div class="app-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="brand">
+        <div class="brand-icon-wrap">
+          <svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">Screen Recorder</span>
+          <span class="brand-subtitle">Local Studio <span class="badge-res-hdr">4K PRO</span></span>
+        </div>
+      </div>
+      <button class="btn-items" id="btnOpenItems" title="เปิดคลังวิดีโอ (My Recordings)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>
+        <span>คลังคลิป</span>
+      </button>
+    </header>
+
+    <!-- Recording State Banner -->
+    <div class="recording-status" id="recordingStatus">
+      <div class="timer-wrap">
+        <span class="pulse-dot"></span>
+        <span class="timer" id="timerText">00:00:00</span>
+      </div>
+      <div class="status-hint">กำลังบันทึกหน้าจอความละเอียดสูง...</div>
+    </div>
+
+    <!-- Controls Area -->
+    <div id="controlsArea">
+      <div class="settings-card">
+        <!-- 1. Resolution -->
+        <div class="setting-item">
+          <div class="row-horizontal">
+            <div class="setting-label">
+              <div class="icon-box">
+                <svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 1.99-.9 1.99-2L23 5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/></svg>
+              </div>
+              <span>ความละเอียด</span>
+            </div>
+            <div class="select-wrap select-wrap-inline">
+              <select id="resolutionSelect">
+                <option value="4k" selected>4K Ultra HD</option>
+                <option value="2k">2K QHD</option>
+                <option value="1080p">1080p FHD</option>
+              </select>
+              <span class="select-arrow">
+                <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Mic Toggle -->
+        <div class="setting-item">
+          <div class="row-horizontal">
+            <div class="setting-label">
+              <div class="icon-box">
+                <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
+              </div>
+              <span>ไมโครโฟน</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="micToggle" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 3. Mic Device Selector (Stacked: Label top, Wide select bottom) -->
+        <div class="setting-item" id="micDeviceRow" style="display: none;">
+          <div class="row-stacked">
+            <div class="stacked-header">
+              <div class="icon-box">
+                <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+              </div>
+              <span class="setting-label" style="font-size: 12px; color: var(--text-secondary);">อุปกรณ์ไมโครโฟน</span>
+            </div>
+            <div class="select-wrap">
+              <select id="micDeviceSelect">
+                <option value="">กำลังค้นหาไมโครโฟน...</option>
+              </select>
+              <span class="select-arrow">
+                <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Webcam Toggle -->
+        <div class="setting-item">
+          <div class="row-horizontal">
+            <div class="setting-label">
+              <div class="icon-box">
+                <svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+              </div>
+              <span>กล้องหน้า (Webcam PiP)</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="camToggle">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 5. Webcam Device Selector (Stacked) -->
+        <div class="setting-item" id="camDeviceRow" style="display: none;">
+          <div class="row-stacked">
+            <div class="stacked-header">
+              <div class="icon-box">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+              </div>
+              <span class="setting-label" style="font-size: 12px; color: var(--text-secondary);">เลือกกล้อง Webcam</span>
+            </div>
+            <div class="select-wrap">
+              <select id="camDeviceSelect">
+                <option value="">กำลังค้นหากล้อง...</option>
+              </select>
+              <span class="select-arrow">
+                <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 6. Webcam Position (Horizontal) -->
+        <div class="setting-item" id="camPositionRow" style="display: none;">
+          <div class="row-horizontal">
+            <div class="setting-label">
+              <div class="icon-box">
+                <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM13 13h5v5h-5z"/></svg>
+              </div>
+              <span>มุมกล้องในวิดีโอ</span>
+            </div>
+            <div class="select-wrap select-wrap-inline">
+              <select id="camPositionSelect">
+                <option value="bottom-right" selected>ขวาล่าง</option>
+                <option value="bottom-left">ซ้ายล่าง</option>
+                <option value="top-right">ขวาบน</option>
+                <option value="top-left">ซ้ายบน</option>
+              </select>
+              <span class="select-arrow">
+                <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7. System Audio Toggle -->
+        <div class="setting-item">
+          <div class="row-horizontal">
+            <div class="setting-label">
+              <div class="icon-box">
+                <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+              </div>
+              <span>เสียงระบบ / เสียงในเครื่อง</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="systemAudioToggle" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
       </div>
     </div>
-    <button class="items-link" id="btnOpenItems" title="เปิดคลังวิดีโอ (My Terminal Items)">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>
-      My Items
+
+    <!-- Start/Stop Recording CTA -->
+    <button class="btn-record btn-start" id="btnToggleRecord">
+      <span class="record-bullet" id="btnIcon"></span>
+      <span id="btnText">เริ่มบันทึกหน้าจอ</span>
     </button>
   </div>
-
-  <div class="recording-status" id="recordingStatus">
-    <div><span class="pulse-dot"></span><span class="timer" id="timerText">00:00:00</span></div>
-    <div class="status-text">&gt; CAPTURING SCREEN STREAM...</div>
-  </div>
-
-  <div id="controlsArea">
-    <div class="section-title">&gt; CONFIGURATION</div>
-    <div class="control-group">
-      <div class="form-row">
-        <div class="label-group">
-          <div class="label-icon">
-            <svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 1.99-.9 1.99-2L23 5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/></svg>
-          </div>
-          <span>ความละเอียด</span>
-        </div>
-        <select id="resolutionSelect">
-          <option value="4k" selected>4K (3840 x 2160)</option>
-          <option value="2k">2K (2560 x 1440)</option>
-          <option value="1080p">1080p (Full HD)</option>
-        </select>
-      </div>
-
-      <div class="form-row">
-        <div class="label-group">
-          <div class="label-icon">
-            <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
-          </div>
-          <span>ไมโครโฟน</span>
-        </div>
-        <label class="switch">
-          <input type="checkbox" id="micToggle" checked>
-          <span class="slider"></span>
-        </label>
-      </div>
-
-      <div class="form-row" id="micDeviceRow" style="display: none;">
-        <div class="label-group">
-          <div class="label-icon">
-            <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
-          </div>
-          <span>เลือกไมค์ (Microphone)</span>
-        </div>
-        <select id="micDeviceSelect">
-          <option value="">กำลังค้นหาไมโครโฟน...</option>
-        </select>
-      </div>
-
-      <div class="form-row">
-        <div class="label-group">
-          <div class="label-icon">
-            <svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
-          </div>
-          <span>กล้องหน้า (Webcam PiP)</span>
-        </div>
-        <label class="switch">
-          <input type="checkbox" id="camToggle">
-          <span class="slider"></span>
-        </label>
-      </div>
-
-      <div class="form-row" id="camDeviceRow" style="display: none;">
-        <div class="label-group">
-          <div class="label-icon">
-            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
-          </div>
-          <span>เลือกกล้อง (Camera)</span>
-        </div>
-        <select id="camDeviceSelect">
-          <option value="">กำลังค้นหากล้อง...</option>
-        </select>
-      </div>
-
-      <div class="form-row" id="camPositionRow" style="display: none;">
-        <div class="label-group">
-          <div class="label-icon">
-            <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM13 13h5v5h-5z"/></svg>
-          </div>
-          <span>ตำแหน่งมุมกล้อง</span>
-        </div>
-        <select id="camPositionSelect">
-          <option value="bottom-right" selected>ขวาล่าง (Bottom Right)</option>
-          <option value="bottom-left">ซ้ายล่าง (Bottom Left)</option>
-          <option value="top-right">ขวาบน (Top Right)</option>
-          <option value="top-left">ซ้ายบน (Top Left)</option>
-        </select>
-      </div>
-
-      <div class="form-row">
-        <div class="label-group">
-          <div class="label-icon">
-            <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
-          </div>
-          <span>เสียงระบบ / คอม</span>
-        </div>
-        <label class="switch">
-          <input type="checkbox" id="systemAudioToggle" checked>
-          <span class="slider"></span>
-        </label>
-      </div>
-    </div>
-  </div>
-
-  <button class="btn-record btn-start" id="btnToggleRecord">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
-    <span id="btnText">&gt; START RECORDING</span>
-  </button>
 
   <script src="popup.js"></script>
 </body>

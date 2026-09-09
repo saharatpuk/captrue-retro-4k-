@@ -2,6 +2,7 @@ let timerInterval = null;
 let recordingStartTime = 0;
 
 const btnToggleRecord = document.getElementById('btnToggleRecord');
+const btnIcon = document.getElementById('btnIcon');
 const btnText = document.getElementById('btnText');
 const recordingStatus = document.getElementById('recordingStatus');
 const timerText = document.getElementById('timerText');
@@ -271,7 +272,8 @@ function setRecordingUI(isRecording, startTime = Date.now()) {
     recordingStatus.style.display = 'block';
     controlsArea.style.display = 'none';
     btnToggleRecord.className = 'btn-record btn-stop';
-    btnText.textContent = 'หยุดการบันทึก (Stop Recording)';
+    if (btnIcon) btnIcon.className = 'stop-square';
+    btnText.textContent = 'หยุดการบันทึก';
     
     recordingStartTime = startTime;
     startTimer();
@@ -279,7 +281,8 @@ function setRecordingUI(isRecording, startTime = Date.now()) {
     recordingStatus.style.display = 'none';
     controlsArea.style.display = 'block';
     btnToggleRecord.className = 'btn-record btn-start';
-    btnText.textContent = 'เริ่มบันทึก (Start Recording)';
+    if (btnIcon) btnIcon.className = 'record-bullet';
+    btnText.textContent = 'เริ่มบันทึกหน้าจอ';
     stopTimer();
   }
 }
