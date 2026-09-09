@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Capture Studio 4K - Screen Recorder",
-  "version": "1.3.0",
-  "description": "Clean Modern Studio 4K Screen Recorder. 100% Local, private, zero server leaks.",
+  "name": "Captrue Retro 4K - Cyber Terminal Screen Recorder",
+  "version": "1.2.0",
+  "description": "Retro Cyber Cinema 4K Screen Recorder. 100% Local, Hacker-grade privacy, zero server leaks.",
   "permissions": [
     "desktopCapture",
     "tabCapture",
